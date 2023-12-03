@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\dayOneController;
+use App\Http\Controllers\dayThreeController;
 use App\Http\Controllers\dayTwoController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,5 +22,9 @@ Route::get('/', function () {
 
 
 Route::get('dayone', [DayOneController::class, 'get']);
+
 Route::get('daytwo-1', [DayTwoController::class, 'partOne']);
 Route::get('daytwo-2', [DayTwoController::class, 'partTwo']);
+
+Route::get('daythree-1', [DayThreeController::class, 'partOne']);
+Route::get('daythree-2', [DayThreeController::class, 'partTwo']);
