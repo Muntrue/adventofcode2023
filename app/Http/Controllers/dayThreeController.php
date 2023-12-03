@@ -36,71 +36,38 @@ class dayThreeController extends Controller
         return $table;
     }
 
-    public function partOne()
+    public function partOne(): int
     {
-        $table = $this->getInput();
 
+        $checkMethod = fn($val) => in_array($val, $this->specialCharacters);
+        $results = $this->doStuff('/^\d+$/', $checkMethod, 'column', 1);
+
+        return array_reduce($results, fn($carry, $result) => $carry + $result, 0);
+    }
+
+    public function partTwo(): int
+    {
+
+        $checkMethod = fn($val) => is_numeric($val);
+        $results = $this->doStuff('/^\*/', $checkMethod, 'val', 2);
+
+        return $results;
+    }
+
+    private function doStuff($regexPattern, $checkMethod, $columnOrVal, $part): int|array
+    {
+
+        $table = $this->getInput();
+        $total = 0;
         $results = [];
-        $resultNum = 0;
+
         foreach ($table as $rowKey => $row) {
             $rowResult = [];
             $alreadyPassed = collect();
-            foreach ($row as $columnKey => $column) {
-                // Check if column is a number
-                if (preg_match('/^\d+$/', $column)) {
-                    $checks = [
-                        [$rowKey, $columnKey - 1], // Left,
-                        [$rowKey, $columnKey + 1], // Right
-                        [$rowKey - 1, $columnKey], // Up
-                        [$rowKey + 1, $columnKey], // Down
-                        [$rowKey - 1, $columnKey - 1], // Diagonal left up
-                        [$rowKey - 1, $columnKey + 1], // Diagonal right up
-                        [$rowKey + 1, $columnKey - 1], // Diagonal left down
-                        [$rowKey + 1, $columnKey + 1], // Diagonal right down
-                    ];
-
-                    // Start checks to see if adjacent is a special character
-                    foreach ($checks as $check) {
-                        try {
-                            $val = $table[$check[0]][$check[1]];
-
-                            if (in_array($val, $this->specialCharacters)) {
-                                $foundOn = $this->findFirstIndexOfNumber($columnKey, $column, $row);
-                                $hasPassed = $alreadyPassed->where(function($q) use($column, $foundOn) {
-                                    return $q['number'] === $column && $q['foundOn'] === $foundOn;
-                                })->first();
-
-
-                                if(!$hasPassed){
-                                    $rowResult[] = $column;
-                                    $resultNum += (int) $column;
-                                    $alreadyPassed->push([
-                                        'foundOn' => $foundOn,
-                                        'number' => $column,
-                                        'until' => $foundOn + strlen($column) -1
-                                    ]);
-                                }
-                            }
-                        } catch (\Exception $x) {
-                        }
-                    }
-                }
-            }
-
-            $results = array_merge($rowResult, $results);
-        }
-        dd(array_reduce($results, fn($carry, $result) => $carry + $result, 0));
-    }
-
-    public function partTwo()
-    {
-        $table = $this->getInput();
-        $total = 0;
-        foreach ($table as $rowKey => $row) {
-            $alreadyPassed = collect();
 
             foreach ($row as $columnKey => $column) {
-                if (preg_match('/^\*/', $column)) {
+                // Check if column matches the pattern
+                if (preg_match($regexPattern, $column)) {
                     $checks = [
                         [$rowKey, $columnKey - 1], // Left,
                         [$rowKey, $columnKey + 1], // Right
@@ -116,39 +83,42 @@ class dayThreeController extends Controller
                     foreach ($checks as $check) {
                         try {
                             $val = $table[$check[0]][$check[1]];
-                            if(is_numeric($val)){
-                                $foundOn = $this->findFirstIndexOfNumber($columnKey, $val, $row);
-                                $hasPassed = $alreadyPassed->where(function($q) use($val, $foundOn) {
-                                    return $q['number'] === $val && $q['foundOn'] === $foundOn;
-                                })->first();
 
-                                if(!$hasPassed){
+                            if ($checkMethod($val)) {
+                                $actualValue = $$columnOrVal;
+                                $foundOn = $this->findFirstIndexOfNumber($columnKey, $actualValue, $row);
+
+                                if ($alreadyPassed->where(fn($q) => $q['number'] === $actualValue && $q['foundOn'] === $foundOn)->isEmpty()) {
+                                    $rowResult[] = $column;
                                     $gearNumbers[] = $val;
+
                                     $alreadyPassed->push([
                                         'foundOn' => $foundOn,
-                                        'number' => $val,
-                                        'until' => $foundOn + strlen($column) -1
+                                        'number' => $$columnOrVal,
+                                        'until' => $foundOn + strlen($column) - 1
                                     ]);
                                 }
                             }
-                        } catch (\Exception $x) {
+                        } catch (\Exception $ex) {
                         }
                     }
-
-                    if(count($gearNumbers) === 2){
+                    if (count($gearNumbers) === 2) {
                         $total += array_reduce($gearNumbers, fn($carry, $num) => $carry * $num, 1);
                     }
                 }
             }
+
+            $results = array_merge($rowResult, $results);
         }
 
-        dd($total);
+        return $part === 1 ? $results : $total;
     }
 
-    private function findFirstIndexOfNumber($index, $number, $row){
-        try{
-           return $row[$index -1] === $number ? $this->findFirstIndexOfNumber($index -1,$number,$row) : $index;
-        }catch(\Exception $ex){
+    private function findFirstIndexOfNumber($index, $number, $row)
+    {
+        try {
+            return $row[$index - 1] === $number ? $this->findFirstIndexOfNumber($index - 1, $number, $row) : $index;
+        } catch (\Exception $ex) {
             return $index;
         }
     }
