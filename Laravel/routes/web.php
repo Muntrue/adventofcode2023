@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\dayFourController;
 use App\Http\Controllers\dayOneController;
 use App\Http\Controllers\dayThreeController;
 use App\Http\Controllers\dayTwoController;
@@ -28,3 +29,7 @@ Route::get('daytwo-2', [DayTwoController::class, 'partTwo']);
 
 Route::get('daythree-1', [DayThreeController::class, 'partOne']);
 Route::get('daythree-2', [DayThreeController::class, 'partTwo']);
+
+
+Route::get('dayfour-1', [DayFourController::class, 'partOne']);
+Route::get('dayfour-2', [DayFourController::class, 'partTwo']);
