@@ -1,8 +1,4 @@
-//const fs = require('fs');
-
 function getInput() {
-    //const input = fs.readFileSync(__dirname + '/input.txt', 'utf8').split('\r\n').filter(Boolean).map(x => x.split(' '));
-
     const string = '|J.7F7-L--77F7-J-F-77FF-7FLLJ7F-J-F---7-J-L-FJ-FJFJ7-7-FF--L7.L--|.FJ-J77FFF|77-7F-7-FFL7-|7-F7-L7F7FF7.|----LL-77FF.F--F-J-LFFL-F-LF7--F-FL\n' +
         'L.---7FF--LJ7J7..L7LFJ.||FJL|LJ.|77.LJ|F|||7J|.|7|JJFF-L--F-|7..L.F-J7JLL--7|J|7.|L-7-7J|F-7-L|J|||-F7F-FJ|..|LFJLJ.-.|||JJ-LFL.||.L|L-JLJJ.\n' +
         '.|L|7|FJJ7L-7F777L|FLJ-FFL-FL-7FJ.|F-LLLJ||.L--77J7-FLJ.L-F-F-7.LFLJ-|L||..77.|F77-L7JL-7JFJ7|FF-L7-LL--|-L.|-7L-J|7..L7||.LFJ7L7JF7.7J7-7-|\n' +
@@ -151,6 +147,7 @@ function getInput() {
 const map = getInput();
 
 const table = document.getElementById('maintable');
+table.classList.add('tableclass')
 let zz = 0;
 map.forEach(line => {
     const row = table.insertRow();
@@ -158,7 +155,32 @@ map.forEach(line => {
         const col = row.insertCell();
         col.setAttribute('id', `row${zz}col${index}`)
         if(letter === 'S') col.classList.add('start');
-        col.innerText = letter;
+        let mutatedLetter = "";
+        switch (letter){
+            case "-":
+                mutatedLetter = "─";
+                break;
+            case "|":
+                mutatedLetter = "│";
+                break;
+            case "F":
+                mutatedLetter = "┌";
+                break;
+            case "7":
+                mutatedLetter = "┐";
+                break;
+            case "L":
+                mutatedLetter = "└";
+                break;
+            case "J":
+                mutatedLetter = "┘";
+                break;
+            case ".":
+                mutatedLetter = '⬤'
+                col.classList.add('is-ground');
+                break;
+        }
+        col.innerText = mutatedLetter;
     });
 
     zz++;
@@ -214,18 +236,20 @@ const validConnections = {
     },
 };
 
-const x = findNearestValidPiece(startingPos, [], true, 1);
-
-console.log(x.length / 2);
-
 let counter = 0;
+//const x = findNearestValidPiece(startingPos, [], true);
 
-function findNearestValidPiece(position, prev, firstPass = true, counter = 1) {
-    console.log(counter);
-    const carry = prev;
+let done = false;
+let position = startingPos;
+let previousResult = position;
+let firstPass = true;
+const passed = [];
 
+while(!done){
     const currentCharacter = map[ position.row ][ position.col ];
     let characterFound;
+    previousResult = position;
+    passed.push(`row${previousResult.row}col${previousResult.col}`)
 
     let result = {
         row: 0,
@@ -256,12 +280,13 @@ function findNearestValidPiece(position, prev, firstPass = true, counter = 1) {
 
         characterFound = map[ row ][ col ];
 
-        if ( characterFound === 'S' && !firstPass && carry.length > 3 && validConnections[currentCharacter][direction].length > 0 ) break;
+        if ( characterFound === 'S' && !firstPass && counter > 3 ) break;
 
         if ( validPieces[ direction ].includes(characterFound) ) {
             const validConnection = (currentCharacter === 'S') ? true : validConnections[ currentCharacter ][ direction ].includes(characterFound);
-            const previously = [ carry[ carry.length - 2 ]?.row, carry[ carry.length - 2 ]?.col ].join('');
-            const notSameAsPrev = previously !== [ row, col ].join('');
+
+            console.log(previousResult, [row,col]);
+            const notSameAsPrev = !passed.includes(`row${row}col${col}`) ;
 
             if ( validConnection && notSameAsPrev ) {
                 result.row = row;
@@ -271,22 +296,22 @@ function findNearestValidPiece(position, prev, firstPass = true, counter = 1) {
         }
     }
 
-    const cellElem = document.getElementById(`row${result.row}col${result.col}`);
-    cellElem.classList.add('on');
-    carry.push(result);
+    counter++;
 
     if ( characterFound === 'S' && !firstPass ) {
-        return carry;
+        done = true;
     }
 
-    if ( result.row === 0 && result.col === 0 ) return carry;
+    if ( result.row === 0 && result.col === 0 ) done = true;
+    firstPass = false;
+    position = result;
 
-    return findNearestValidPiece(result, carry, false);
-
-    /*setTimeout(() => {
-        return findNearestValidPiece(result, carry, false);
-    }, 0);*/
+    const cellElem = document.getElementById(`row${result.row}col${result.col}`);
+    cellElem.classList.add('on');
+    //return findNearestValidPiece(result, position, false);
 }
+
+console.log(counter / 2);
 
 function findStartingPos() {
     let foundRow = 0;
